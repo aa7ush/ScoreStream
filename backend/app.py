@@ -44,8 +44,14 @@ def fetch_json(endpoint: str):
     url = f"{BASE_URL}{endpoint}" if endpoint.startswith("/") else f"{BASE_URL}/{endpoint}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9"
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.sofascore.com/",
+        "Origin": "https://www.sofascore.com"
     }
+    
+    sys.stderr.write(f"FETCH: {url}\n")
+    
     try:
         kwargs = {"headers": headers, "timeout": 15}
         if USE_CURL_CFFI:
@@ -53,11 +59,18 @@ def fetch_json(endpoint: str):
         
         r = curl_requests.get(url, **kwargs)
         if r.status_code == 200:
-            return r.json()
-        sys.stderr.write(f"HTTP {r.status_code}: {url}\n")
+            data = r.json()
+            event_count = len(data.get("events", [])) if isinstance(data, dict) else "N/A"
+            sys.stderr.write(f"SUCCESS: {url} (Count: {event_count})\n")
+            return data
+        
+        sys.stderr.write(f"HTTP ERROR {r.status_code}: {url}\n")
+        # Log a snippet of the error page if it's not JSON
+        if r.status_code != 200:
+            sys.stderr.write(f"RESPONSE PREVIEW: {r.text[:200]}\n")
         return None
     except Exception as e:
-        sys.stderr.write(f"ERROR {e}: {url}\n")
+        sys.stderr.write(f"CRITICAL FETCH ERROR {e}: {url}\n")
         return None
 
 _cache: dict = {}
