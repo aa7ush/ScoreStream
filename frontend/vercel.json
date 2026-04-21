@@ -1,6 +1,7 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://sportylytics-api.onrender.com/:path*" },
     { "source": "/player/:id", "destination": "/player.html?id=:id" },
     { "source": "/team/:id", "destination": "/team.html?id=:id" },
     { "source": "/league/:id", "destination": "/competition.html?id=:id" },

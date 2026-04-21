@@ -3,7 +3,7 @@
  * Points to the Render backend.
  */
 
-const API_BASE = 'https://sportylytics-api.onrender.com'; // TODO: Update this with your actual Render URL if different
+const API_BASE = '/api'; // Managed by Vercel Reverse Proxy
 
 async function fetchData(endpoint) {
     try {
