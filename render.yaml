@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: sportylytics-api
+    name: sportylytics-backend
     env: python
-    rootDir: backend
+    rootDir: .
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
