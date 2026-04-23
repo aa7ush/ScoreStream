@@ -130,6 +130,42 @@ def fetch_json(endpoint: str):
         sys.stderr.write(f"CRITICAL FETCH ERROR {e}: {url}\n")
         return None
 
+def scrape_home_matches():
+    url = "https://www.sofascore.com/"
+    # We know Render gets this with 200 via diagnostics
+    sys.stderr.write(f"SCRAPING HOME: {url}\n")
+    try:
+        global _SHARED_SESSION
+        if _SHARED_SESSION is None:
+            if USE_CURL_CFFI:
+                _SHARED_SESSION = curl_requests.Session(impersonate="chrome120")
+            else:
+                _SHARED_SESSION = requests.Session()
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        r = _SHARED_SESSION.get(url, headers=headers, timeout=15)
+        if r.status_code == 200:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(r.text, 'html.parser')
+            script = soup.find('script', id='__NEXT_DATA__')
+            if script:
+                data = json.loads(script.string)
+                # Next.js SofaScore structure: props.pageProps.initialDateEvents.events
+                events = data.get('props', {}).get('pageProps', {}).get('initialDateEvents', {}).get('events', [])
+                if not events:
+                    # Alternative path
+                    events = data.get('props', {}).get('pageProps', {}).get('events', [])
+                sys.stderr.write(f"SCRAPE SUCCESS: Found {len(events)} events\n")
+                return {"events": events}
+        sys.stderr.write(f"SCRAPE FAIL: Status {r.status_code}\n")
+    except Exception as e:
+        sys.stderr.write(f"SCRAPE ERROR: {e}\n")
+    return None
+
 _cache: dict = {}
 
 def cached_fetch(key: str, ttl: int, endpoint: str):
@@ -566,6 +602,15 @@ def debug_logs():
 def matches_route():
     date = request.args.get("date", datetime.datetime.utcnow().strftime("%Y-%m-%d"))
     raw = cached_fetch(f"today:{date}", 60, f"/sport/football/scheduled-events/{date}")
+    
+    # Fallback to scraping today's home page if API fails and date is today
+    if (not raw or not raw.get("events")) and date == datetime.datetime.utcnow().strftime("%Y-%m-%d"):
+        sys.stderr.write("API FAILED. ATTEMPTING SCRAPER FALLBACK...\n")
+        raw = scrape_home_matches()
+        if raw:
+            # Cache it so we don't scrape every time
+            _cache[f"today:{date}"] = {"data": raw, "exp": time.time() + 300}
+            
     events = (raw.get("events") or []) if raw else []
     grouped: dict = {}
     pinned_grouped: dict = {}
