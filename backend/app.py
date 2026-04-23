@@ -36,7 +36,7 @@ app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
 CORS(app)
 
-BASE_URL = "https://api.sofascore.app/api/v1"
+BASE_URL = "https://api.sofascore.com/api/v1"
 sys.stderr.write(f"STARTUP: USE_CURL_CFFI={USE_CURL_CFFI}\n")
 
 # ── HTTP fetch ────────────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ def fetch_json(endpoint: str):
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.sofascore.com/",
         "Origin": "https://www.sofascore.com",
-        "Host": "api.sofascore.app",
+        "Host": "api.sofascore.com",
         "Connection": "keep-alive",
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
@@ -64,7 +64,11 @@ def fetch_json(endpoint: str):
             kwargs["impersonate"] = "chrome120"
         
         r = curl_requests.get(url, **kwargs)
+        sys.stderr.write(f"RESPONSE: {url} Status={r.status_code} Length={len(r.text)}\n")
         if r.status_code == 200:
+            if not r.text:
+                sys.stderr.write(f"EMPTY RESPONSE: {url}\n")
+                return None
             try:
                 data = r.json()
                 event_count = len(data.get("events", [])) if isinstance(data, dict) else "N/A"

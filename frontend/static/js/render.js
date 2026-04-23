@@ -106,7 +106,7 @@ function renderGroup(uid, group, isPinned = false) {
     return `
         <div class="competition-section" id="${sectionId}">
             <div class="comp-header" onclick="toggleSection('${sectionId}')">
-                <img class="comp-header-emblem" src="https://api.sofascore.app/api/v1/unique-tournament/${ut.id}/image" alt="${ut.name}">
+                <img class="comp-header-emblem" src="https://api.sofascore.com/api/v1/unique-tournament/${ut.id}/image" alt="${ut.name}">
                 <span class="comp-header-name">${ut.name}</span>
                 <span class="comp-header-country">&middot; ${ut.category ? ut.category.name : ''}</span>
                 <a href="/standings/${ut.id}" class="badge badge-muted" style="margin-left:8px;" onclick="event.stopPropagation();">Table</a>
@@ -139,7 +139,7 @@ function renderMatchCard(ev, isPinned) {
         <div class="match-card" id="match-${ev.id}${suffix}" onclick="window.location.href='/match/${ev.id}'">
             <div class="match-status">${statusHtml}</div>
             <div class="team-col home">
-                <img class="team-crest" src="https://api.sofascore.app/api/v1/team/${home.id}/image">
+                <img class="team-crest" src="https://api.sofascore.com/api/v1/team/${home.id}/image">
                 <span class="team-name">${home.shortName || home.name}</span>
             </div>
             <div class="score-col">
@@ -150,7 +150,7 @@ function renderMatchCard(ev, isPinned) {
                 ` : '<span class="score-display" style="font-size:13px; color:var(--text-muted);">vs</span>'}
             </div>
             <div class="team-col away">
-                <img class="team-crest" src="https://api.sofascore.app/api/v1/team/${away.id}/image">
+                <img class="team-crest" src="https://api.sofascore.com/api/v1/team/${away.id}/image">
                 <span class="team-name">${away.shortName || away.name}</span>
             </div>
         </div>
@@ -175,12 +175,12 @@ async function renderPlayer(id) {
                 <div class="player-hero-bg" style="background: linear-gradient(135deg, ${tc.primary || '#2563eb'}22 0%, var(--bg-card) 100%);"></div>
                 <div class="player-hero-content">
                     <div class="player-hero-portrait">
-                        <img src="https://api.sofascore.app/api/v1/player/${p.id}/image" onerror="this.src='/static/img/player-placeholder.png';">
+                        <img src="https://api.sofascore.com/api/v1/player/${p.id}/image" onerror="this.src='/static/img/player-placeholder.png';">
                     </div>
                     <div class="player-hero-info">
                         ${team.id ? `
                             <div class="player-hero-team-badge">
-                                <img src="https://api.sofascore.app/api/v1/team/${team.id}/image">
+                                <img src="https://api.sofascore.com/api/v1/team/${team.id}/image">
                                 <span>${team.name}</span>
                             </div>
                         ` : ''}
@@ -303,7 +303,7 @@ async function renderTeam(id) {
         <div class="page-content">
             <div class="section-card">
                 <div class="section-card-header" style="display:flex;align-items:center;gap:16px;">
-                    <img src="https://api.sofascore.app/api/v1/team/${t.id}/image" style="width:48px;height:48px;object-fit:contain;">
+                    <img src="https://api.sofascore.com/api/v1/team/${t.id}/image" style="width:48px;height:48px;object-fit:contain;">
                     <h1 style="margin:0;">${t.name}</h1>
                 </div>
                 <div class="section-card-body">
@@ -337,7 +337,7 @@ async function renderCompetition(id, sid) {
         <div class="page-content">
             <div class="section-card">
                 <div class="section-card-header" style="display:flex;align-items:center;gap:16px;">
-                    <img src="https://api.sofascore.app/api/v1/unique-tournament/${comp.id}/image" style="width:48px;height:48px;object-fit:contain;">
+                    <img src="https://api.sofascore.com/api/v1/unique-tournament/${comp.id}/image" style="width:48px;height:48px;object-fit:contain;">
                     <h1 style="margin:0;">${comp.name}</h1>
                 </div>
                 <div class="section-card-body">
@@ -375,14 +375,14 @@ async function renderMatch(id) {
             <div class="match-card-hero" style="text-align:center;padding:40px;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
                 <div style="display:flex;justify-content:center;align-items:center;gap:40px;">
                     <div>
-                        <img src="https://api.sofascore.app/api/v1/team/${ev.homeTeam.id}/image" style="width:80px;height:80px;">
+                        <img src="https://api.sofascore.com/api/v1/team/${ev.homeTeam.id}/image" style="width:80px;height:80px;">
                         <h3>${ev.homeTeam.name}</h3>
                     </div>
                     <div style="font-size:48px;font-weight:800;">
                         ${ev.homeScore.display ?? 0} - ${ev.awayScore.display ?? 0}
                     </div>
                     <div>
-                        <img src="https://api.sofascore.app/api/v1/team/${ev.awayTeam.id}/image" style="width:80px;height:80px;">
+                        <img src="https://api.sofascore.com/api/v1/team/${ev.awayTeam.id}/image" style="width:80px;height:80px;">
                         <h3>${ev.awayTeam.name}</h3>
                     </div>
                 </div>
