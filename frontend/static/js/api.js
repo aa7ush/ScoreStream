@@ -1,13 +1,11 @@
 /**
  * api.js - Centralized API calls for the Sportylytics frontend.
- * Points to the Render backend.
+ * Uses API_CONFIG from api-config.js.
  */
-
-const API_BASE = '/api'; // Managed by Vercel Reverse Proxy
 
 async function fetchData(endpoint) {
     try {
-        const response = await fetch(`${API_BASE}${endpoint}`);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
     } catch (e) {
