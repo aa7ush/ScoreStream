@@ -20,7 +20,7 @@ except ImportError:
     curl_requests = requests
     USE_CURL_CFFI = False
 
-VERSION = "1.0.8-scraper-force"
+VERSION = "1.0.9-deep-search"
 
 async def get_session():
     global _SHARED_SESSION
@@ -156,26 +156,33 @@ def scrape_home_matches():
             script = soup.find('script', id='__NEXT_DATA__')
             if script:
                 data = json.loads(script.string)
-                pageProps = data.get('props', {}).get('pageProps', {})
-                avail_keys = list(pageProps.keys())
                 
-                # Try multiple paths
-                events = (pageProps.get('initialDateEvents') or {}).get('events', [])
-                if not events:
-                    events = pageProps.get('events', [])
-                if not events:
-                    events = (pageProps.get('initialSelection') or {}).get('events', [])
+                def deep_find_events(obj):
+                    if isinstance(obj, dict):
+                        if 'events' in obj and isinstance(obj['events'], list) and len(obj['events']) > 10:
+                            return obj['events']
+                        for k, v in obj.items():
+                            if k in ['initialProps', 'initialState', 'pageProps', 'initialDateEvents']:
+                                res = deep_find_events(v)
+                                if res: return res
+                    return None
+
+                events = deep_find_events(data)
+                avail_keys = list(data.get('props', {}).get('pageProps', {}).keys())
                 
                 DIAGNOSTICS.append({
                     "time": datetime.datetime.utcnow().isoformat(),
-                    "scrape_step": "DATA_PARSED",
+                    "scrape_step": "DEEP_SEARCH",
                     "found_events": bool(events),
-                    "count": len(events),
-                    "pageProps_keys": avail_keys[:15]
+                    "count": len(events) if events else 0,
+                    "pageProps_keys": avail_keys[:10]
                 })
                 
-                sys.stderr.write(f"SCRAPE SUCCESS: Found {len(events)} events. Keys: {avail_keys}\n")
-                return {"events": events}
+                if events:
+                    sys.stderr.write(f"SCRAPE SUCCESS: Found {len(events)} events via deep search.\n")
+                    return {"events": events}
+                
+                sys.stderr.write(f"SCRAPE FAIL: Could not find events in keys {avail_keys}\n")
             else:
                 DIAGNOSTICS.append({
                     "time": datetime.datetime.utcnow().isoformat(),
