@@ -4,11 +4,13 @@ import sys
 import json
 import urllib.parse
 import asyncio
-from flask import Flask, render_template, abort, request, Response, jsonify, Blueprint
+from flask import Flask, render_template, abort, request, Response, jsonify, Blueprint, redirect, url_for
 from flask_cors import CORS
 from markupsafe import Markup
 import requests
 import io
+# Global for diagnostics
+DIAGNOSTICS = []
 
 # Fallback for curl_cffi in environments where it fails to load
 try:
@@ -49,11 +51,7 @@ def fetch_json(endpoint: str):
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.sofascore.com/",
         "Origin": "https://www.sofascore.com",
-        "Host": "api.sofascore.com",
-        "Connection": "keep-alive",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "cross-site"
+        "Host": "api.sofascore.com"
     }
     
     sys.stderr.write(f"FETCH: {url}\n")
@@ -64,10 +62,20 @@ def fetch_json(endpoint: str):
             kwargs["impersonate"] = "chrome120"
         
         r = curl_requests.get(url, **kwargs)
+        diag_entry = {
+            "time": datetime.datetime.utcnow().isoformat(),
+            "url": url,
+            "status": r.status_code,
+            "length": len(r.text),
+            "snippet": r.text[:200]
+        }
+        DIAGNOSTICS.append(diag_entry)
+        if len(DIAGNOSTICS) > 20: DIAGNOSTICS.pop(0)
+        
         sys.stderr.write(f"RESPONSE: {url} Status={r.status_code} Length={len(r.text)}\n")
         if r.status_code == 200:
-            if not r.text:
-                sys.stderr.write(f"EMPTY RESPONSE: {url}\n")
+            if not r.text or len(r.text) < 10:
+                sys.stderr.write(f"EMPTY/SHORT RESPONSE: {url}\n")
                 return None
             try:
                 data = r.json()
@@ -513,7 +521,11 @@ def index_redirect():
 
 @app.route("/health")
 def health_check():
-    return jsonify({"status": "ok", "curl_cffi": USE_CURL_CFFI})
+    return jsonify({"status": "ok", "curl_cffi": USE_CURL_CFFI, "diagnostics": DIAGNOSTICS})
+
+@app.route("/debug/logs")
+def debug_logs():
+    return jsonify(DIAGNOSTICS)
 
 @app.route("/matches")
 def matches_route():
