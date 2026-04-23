@@ -20,7 +20,7 @@ except ImportError:
     curl_requests = requests
     USE_CURL_CFFI = False
 
-VERSION = "1.1.7-routing-fix"
+VERSION = "1.1.8-script-dump"
 
 async def get_session():
     global _SHARED_SESSION
@@ -155,7 +155,14 @@ def scrape_home_matches():
             soup = BeautifulSoup(r.text, 'html.parser')
             script = soup.find('script', id='__NEXT_DATA__')
             if script:
-                data = json.loads(script.string)
+                script_content = script.string or ""
+                sys.stderr.write(f"SCRIPT CONTENT (500 chars): {script_content[:500]}\n")
+                DIAGNOSTICS.append({
+                    "time": datetime.datetime.utcnow().isoformat(),
+                    "scrape_step": "SCRIPT_FOUND",
+                    "content_snippet": script_content[:200]
+                })
+                data = json.loads(script_content)
                 
                 def deep_find_matches(obj, depth=0):
                     if depth > 30: return None
