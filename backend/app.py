@@ -9,16 +9,30 @@ from flask_cors import CORS
 from markupsafe import Markup
 import requests
 import io
-# Global for diagnostics
+# Global for diagnostics and session
 DIAGNOSTICS = []
+_SHARED_SESSION = None
 
-# Fallback for curl_cffi in environments where it fails to load
 try:
     from curl_cffi import requests as curl_requests
     USE_CURL_CFFI = True
 except ImportError:
     curl_requests = requests
     USE_CURL_CFFI = False
+
+async def get_session():
+    global _SHARED_SESSION
+    if _SHARED_SESSION is None:
+        if USE_CURL_CFFI:
+            _SHARED_SESSION = curl_requests.Session(impersonate="chrome120")
+        else:
+            _SHARED_SESSION = requests.Session()
+        
+        # Pre-fetch home page to get meaningful cookies
+        try:
+            _SHARED_SESSION.get("https://www.sofascore.com/", timeout=10)
+        except: pass
+    return _SHARED_SESSION
 
 def parse_pins_cookie(cookie_name: str) -> list:
     c = request.cookies.get(cookie_name)
@@ -47,21 +61,38 @@ def fetch_json(endpoint: str):
     url = f"{BASE_URL}{endpoint}" if endpoint.startswith("/") else f"{BASE_URL}/{endpoint}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
+        "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.sofascore.com/",
         "Origin": "https://www.sofascore.com",
-        "Host": "api.sofascore.com"
+        "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-site"
     }
     
     sys.stderr.write(f"FETCH: {url}\n")
     
     try:
-        kwargs = {"headers": headers, "timeout": 15}
-        if USE_CURL_CFFI:
-            kwargs["impersonate"] = "chrome120"
+        global _SHARED_SESSION
+        if _SHARED_SESSION is None:
+            if USE_CURL_CFFI:
+                _SHARED_SESSION = curl_requests.Session(impersonate="chrome120")
+            else:
+                _SHARED_SESSION = requests.Session()
+            # Initial hit to home page
+            try: _SHARED_SESSION.get("https://www.sofascore.com/", timeout=10)
+            except: pass
         
-        r = curl_requests.get(url, **kwargs)
+        session = _SHARED_SESSION
+
+        kwargs = {"headers": headers, "timeout": 15}
+        # Note: impersonate is set at session level if using curl_cffi Session
+        
+        r = session.get(url, **kwargs)
+        
         diag_entry = {
             "time": datetime.datetime.utcnow().isoformat(),
             "url": url,
