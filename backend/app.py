@@ -20,7 +20,7 @@ except ImportError:
     curl_requests = requests
     USE_CURL_CFFI = False
 
-VERSION = "1.1.0-ultra-deep-search"
+VERSION = "1.1.6-final-fix"
 
 async def get_session():
     global _SHARED_SESSION
@@ -158,14 +158,16 @@ def scrape_home_matches():
                 data = json.loads(script.string)
                 
                 def deep_find_matches(obj, depth=0):
-                    if depth > 20: return None
+                    if depth > 25: return None
                     if isinstance(obj, dict):
-                        for k, v in obj.items():
+                        if 'events' in obj and isinstance(obj['events'], list) and len(obj['events']) > 0:
+                            if len(obj['events']) > 0 and isinstance(obj['events'][0], dict) and 'homeTeam' in obj['events'][0]:
+                                return obj['events']
+                        for v in obj.values():
                             res = deep_find_matches(v, depth + 1)
                             if res: return res
                     elif isinstance(obj, list):
-                        # Characteristics of a matches list: length > 5, first item has homeTeam
-                        if len(obj) > 5 and isinstance(obj[0], dict) and 'homeTeam' in obj[0]:
+                        if len(obj) > 0 and isinstance(obj[0], dict) and 'homeTeam' in obj[0]:
                             return obj
                         for item in obj:
                             res = deep_find_matches(item, depth + 1)
@@ -660,9 +662,29 @@ def debug_raw_html():
             "Accept-Language": "en-US,en;q=0.9",
         }
         r = _SHARED_SESSION.get(url, headers=headers, timeout=15)
-        return r.text[:20000] # Return first 20k chars
+        return r.text[:50000] # Return first 50k chars
     except Exception as e:
         return str(e)
+
+def _proxy_image_internal(url):
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        r = requests.get(url, headers=headers, timeout=10)
+        return Response(r.content, mimetype=r.headers.get('Content-Type') or 'image/png')
+    except Exception as e:
+        return str(e), 500
+
+@app.route("/api/image/team/<int:tid>")
+def proxy_team_image(tid):
+    return _proxy_image_internal(f"https://api.sofascore.com/api/v1/team/{tid}/image")
+
+@app.route("/api/image/unique-tournament/<int:lid>")
+def proxy_league_image(lid):
+    return _proxy_image_internal(f"https://api.sofascore.com/api/v1/unique-tournament/{lid}/image")
+
+@app.route("/api/image/player/<int:pid>")
+def proxy_player_image(pid):
+    return _proxy_image_internal(f"https://api.sofascore.com/api/v1/player/{pid}/image")
 
 @app.route("/matches")
 def matches_route():
@@ -978,9 +1000,9 @@ def api_match_player_heatmap(match_id: int, player_id: int):
 def api_init():
     return jsonify({
         "leagues": LEAGUES,
-        "team_image_url": config.team_image_url(0).replace("0", "{id}"), # Template for frontend
-        "league_image_url": config.league_image_url(0).replace("0", "{id}"),
-        "player_image_url": config.player_image_url(0).replace("0", "{id}"),
+        "team_image_url": "/api/image/team/{id}",
+        "league_image_url": "/api/image/unique-tournament/{id}",
+        "player_image_url": "/api/image/player/{id}",
         "STATUS_LABELS": STATUS_LABELS
     })
 
