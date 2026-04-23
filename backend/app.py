@@ -643,6 +643,27 @@ def health_check():
 def debug_logs():
     return jsonify(DIAGNOSTICS)
 
+@app.route("/debug/raw_html")
+def debug_raw_html():
+    url = "https://www.sofascore.com/"
+    try:
+        global _SHARED_SESSION
+        if _SHARED_SESSION is None:
+            if USE_CURL_CFFI:
+                _SHARED_SESSION = curl_requests.Session(impersonate="chrome120")
+            else:
+                _SHARED_SESSION = requests.Session()
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        r = _SHARED_SESSION.get(url, headers=headers, timeout=15)
+        return r.text[:20000] # Return first 20k chars
+    except Exception as e:
+        return str(e)
+
 @app.route("/matches")
 def matches_route():
     date = request.args.get("date", datetime.datetime.utcnow().strftime("%Y-%m-%d"))
