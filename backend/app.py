@@ -20,7 +20,7 @@ except ImportError:
     curl_requests = requests
     USE_CURL_CFFI = False
 
-VERSION = "1.1.6-final-fix"
+VERSION = "1.1.7-routing-fix"
 
 async def get_session():
     global _SHARED_SESSION
@@ -158,12 +158,12 @@ def scrape_home_matches():
                 data = json.loads(script.string)
                 
                 def deep_find_matches(obj, depth=0):
-                    if depth > 25: return None
+                    if depth > 30: return None
                     if isinstance(obj, dict):
-                        if 'events' in obj and isinstance(obj['events'], list) and len(obj['events']) > 0:
-                            if len(obj['events']) > 0 and isinstance(obj['events'][0], dict) and 'homeTeam' in obj['events'][0]:
-                                return obj['events']
-                        for v in obj.values():
+                        # Try finding a list with 'homeTeam' in any key
+                        for k, v in obj.items():
+                            if isinstance(v, list) and len(v) > 0 and isinstance(v[0], dict) and 'homeTeam' in v[0]:
+                                return v
                             res = deep_find_matches(v, depth + 1)
                             if res: return res
                     elif isinstance(obj, list):
@@ -674,15 +674,15 @@ def _proxy_image_internal(url):
     except Exception as e:
         return str(e), 500
 
-@app.route("/api/image/team/<int:tid>")
+@app.route("/image/team/<int:tid>")
 def proxy_team_image(tid):
     return _proxy_image_internal(f"https://api.sofascore.com/api/v1/team/{tid}/image")
 
-@app.route("/api/image/unique-tournament/<int:lid>")
+@app.route("/image/unique-tournament/<int:lid>")
 def proxy_league_image(lid):
     return _proxy_image_internal(f"https://api.sofascore.com/api/v1/unique-tournament/{lid}/image")
 
-@app.route("/api/image/player/<int:pid>")
+@app.route("/image/player/<int:pid>")
 def proxy_player_image(pid):
     return _proxy_image_internal(f"https://api.sofascore.com/api/v1/player/{pid}/image")
 
