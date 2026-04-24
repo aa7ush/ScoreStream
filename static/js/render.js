@@ -98,7 +98,7 @@ async function renderIndex(date) {
         html += `
             <div class="empty-state">
                 <div class="empty-state-icon">📅</div>
-                <div class="empty-state-text">No matches found for this date</div>
+                <div class="empty-state-text">No matches found for this date. (Backend connected, but SofaScore is blocking the scraper)</div>
             </div>
         `;
     }
