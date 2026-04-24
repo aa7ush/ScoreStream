@@ -191,6 +191,7 @@ def scrape_home_matches():
                             if res: return res
                     return None
 
+                events = None
                 # Specific SofaScore paths
                 props = data.get('props', {})
                 page_props = props.get('pageProps', {})
