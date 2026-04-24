@@ -5,11 +5,18 @@
 
 async function fetchData(endpoint) {
     try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
+        const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+        console.log(`[API] Fetching: ${url}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error(`[API] HTTP Error ${response.status} for ${url}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(`[API] Success for ${url}`, data);
+        return data;
     } catch (e) {
-        console.error("Fetch error:", e);
+        console.error("[API] Fetch error:", e);
         return null;
     }
 }

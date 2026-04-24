@@ -132,7 +132,9 @@ def fetch_json(endpoint: str):
         
         if r.status_code != 200:
             sys.stderr.write(f"RESPONSE PREVIEW: {r.text[:500]}\n")
-        return None
+        
+        # Add a light cache header for valid responses
+        return data
     except Exception as e:
         sys.stderr.write(f"CRITICAL FETCH ERROR {e}: {url}\n")
         return None

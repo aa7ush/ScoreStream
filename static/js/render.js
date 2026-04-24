@@ -66,9 +66,21 @@ function renderCommon(config) {
 // ── Index Page ──────────────────────────────────────────────────────────────
 
 async function renderIndex(date) {
-    const data = await fetchData(`/?date=${date}`);
     const container = document.getElementById('matches-container');
-    if (!data || !container) return;
+    if (!container) return;
+    
+    console.log("[Render] Fetching index matches...");
+    const data = await fetchData(`/?date=${date}`);
+    
+    if (!data) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📡</div>
+                <div class="empty-state-text">Backend unreachable. Please check your connection.</div>
+            </div>
+        `;
+        return;
+    }
 
     let html = '';
     
