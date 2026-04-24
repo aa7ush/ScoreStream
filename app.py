@@ -678,8 +678,8 @@ async def fetch_json_async(session, endpoint: str):
 from flask import redirect, url_for
 
 @app.route("/")
-def index_redirect():
-    return redirect(url_for('matches_route'))
+def index_root():
+    return jsonify({"status": "Sportylytics Backend Live", "version": VERSION})
 
 @app.route("/health")
 def health_check():
